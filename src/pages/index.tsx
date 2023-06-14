@@ -1,118 +1,178 @@
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
+import * as React from "react";
+import Category from "../components/Category";
+import DownIcon from "../components/icons/DownIcon";
+import UpIcon from "../components/icons/UpIcon";
+import { Inter } from "next/font/google";
+import DataRow from "@/components/DataRow";
+import Loader from "@/components/Loader";
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ["latin"] });
+
+export interface DataType {
+  _id: string;
+  name: string;
+  image: string;
+  category: string;
+  label: string;
+  price: string;
+  description: string;
+}
+
+interface Categories {
+  [key: string]: DataType[];
+}
 
 export default function Home() {
+  const [tableData, setTableData] = React.useState<DataType[]>([]);
+  const [categoryData, setCategoryData] = React.useState<Categories>({});
+  const [sortBy, setSortBy] = React.useState<"ASCENDING" | "DESCENDING">(
+    "ASCENDING"
+  );
+
+  const getTableData = React.useCallback(async () => {
+    try {
+      const results = await fetch("/api/menu").then((response) =>
+        response.json()
+      );
+      setTableData(results);
+    } catch (error) {
+      console.error(error);
+    }
+  }, []);
+
+  const getCategoryDataFromStorage = () => {
+    const categoryDataString = localStorage.getItem("categoryData");
+    const categoryDataFromStorage = JSON.parse(categoryDataString || "false");
+    return categoryDataFromStorage;
+  };
+
+  React.useEffect(() => {
+    // API Call to get data
+    if (getCategoryDataFromStorage()) {
+      setCategoryData(getCategoryDataFromStorage());
+    } else {
+      getTableData();
+    }
+  }, [getTableData]);
+
+  React.useEffect(() => {
+    if (tableData.length > 0) {
+      const categorizedData = categoriesTheData(tableData);
+      setCategoryData(categorizedData);
+    }
+  }, [tableData]);
+
+  const categoriesTheData = (data: DataType[]): Categories => {
+    const categories: Categories = {};
+    data.forEach((item) => {
+      // eslint-disable-next-line no-prototype-builtins
+      if (!categories.hasOwnProperty(item.category)) {
+        categories[item.category] = [item];
+      } else {
+        categories[item.category] = [...categories[item.category], item];
+      }
+    });
+    return categories;
+  };
+
+  const sortTableDataByPrice = () => {
+    const categories = {
+      ...categoryData,
+    };
+    Object.keys(categories).map((key) => {
+      categories[key].sort((a, b) =>
+        sortBy === "ASCENDING"
+          ? Number(a.price) - Number(b.price)
+          : Number(b.price) - Number(a.price)
+      );
+    });
+    setCategoryData(categories);
+    setSortBy((current) =>
+      current === "ASCENDING" ? "DESCENDING" : "ASCENDING"
+    );
+  };
+
+  const updateThePrice = (category: string, index: number, value: string) => {
+    const currentCategoryData = {
+      ...categoryData,
+    };
+    currentCategoryData[category][index].price = value;
+    setCategoryData(currentCategoryData);
+  };
+
+  const saveDataToStorage = () => {
+    localStorage.setItem("categoryData", JSON.stringify(categoryData));
+  };
+
+  const resetData = () => {
+    if (getCategoryDataFromStorage()) {
+      setCategoryData(getCategoryDataFromStorage());
+    } else {
+      const categorizedData = categoriesTheData(tableData);
+      setCategoryData(categorizedData);
+    }
+  };
+
   return (
-    <main
-      className={`flex min-h-screen flex-col items-center justify-between p-24 ${inter.className}`}
-    >
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/pages/index.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+    <main className="min-h-screen p-6 space-y-6">
+      <p className="flex justify-center w-full border-b border-gray-300 lg:w-auto dark:border-neutral-800 lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
+        Food Menu
+      </p>
+      {Object.keys(categoryData).length > 0 ? (
+        Object.keys(categoryData).map((key) => (
+          <Category name={key} key={key}>
+            <table className="w-full">
+              <thead>
+                <tr className="grid grid-cols-3 gap-2 text-center border-b border-gray-200">
+                  <th>Name</th>
+                  <th className="text-left">Description</th>
+                  <th
+                    className="flex items-center justify-end cursor-pointer gap-x-2"
+                    onClick={sortTableDataByPrice}
+                  >
+                    Price{" "}
+                    {sortBy === "ASCENDING" ? (
+                      <DownIcon variant="small" />
+                    ) : (
+                      <UpIcon variant="small" />
+                    )}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {categoryData[key].map((data, index) => (
+                  <DataRow
+                    data={data}
+                    key={`${data._id}${key}`}
+                    index={index}
+                    updateThePrice={updateThePrice}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </Category>
+        ))
+      ) : (
+        <Loader />
+      )}
+      {/* <Loader /> */}
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
+      <div className="flex items-center justify-center">
+        <button
+          type="button"
+          className="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
+          onClick={saveDataToStorage}
         >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
+          Save
+        </button>
+        <button
+          type="button"
+          className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+          onClick={resetData}
         >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Discover and deploy boilerplate example Next.js&nbsp;projects.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+          Reset
+        </button>
       </div>
     </main>
-  )
+  );
 }
