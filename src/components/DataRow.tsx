@@ -10,7 +10,7 @@ const DataRow: React.FC<{
   updateThePrice: (category: string, index: number, value: string) => void;
 }> = ({ data, index, updateThePrice }) => {
   return (
-    <tr className="grid grid-cols-3 gap-4 py-5 text-center border-b border-gray-200">
+    <tr className="grid grid-cols-3 gap-4 py-5 text-center border-b border-gray-700 dark:border-gray-200">
       <td className="flex flex-col items-center justify-center">
         <div className="relative">
           <Image

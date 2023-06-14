@@ -123,7 +123,7 @@ export default function Home() {
           <Category name={key} key={key}>
             <table className="w-full lg:max-w-[80%] lg:mx-auto">
               <thead>
-                <tr className="grid grid-cols-3 gap-4 text-center border-b border-gray-200">
+                <tr className="grid grid-cols-3 gap-4 text-center border-b border-gray-700 dark:border-gray-200">
                   <th>Name</th>
                   <th className="text-left">Description</th>
                   <th
