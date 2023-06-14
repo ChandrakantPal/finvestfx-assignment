@@ -115,19 +115,19 @@ export default function Home() {
 
   return (
     <main className="min-h-screen p-6 space-y-6">
-      <p className="flex justify-center w-full border-b border-gray-300 lg:w-auto dark:border-neutral-800 lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
+      <p className="w-40 p-4 mx-auto text-center border border-b border-gray-300 dark:border-neutral-800 rounded-xl lg:dark:bg-zinc-800/30">
         Food Menu
       </p>
       {Object.keys(categoryData).length > 0 ? (
         Object.keys(categoryData).map((key) => (
           <Category name={key} key={key}>
-            <table className="w-full">
+            <table className="w-full lg:max-w-[80%] lg:mx-auto">
               <thead>
-                <tr className="grid grid-cols-3 gap-2 text-center border-b border-gray-200">
+                <tr className="grid grid-cols-3 gap-4 text-center border-b border-gray-200">
                   <th>Name</th>
                   <th className="text-left">Description</th>
                   <th
-                    className="flex items-center justify-end cursor-pointer gap-x-2"
+                    className="flex items-center justify-start cursor-pointer gap-x-2"
                     onClick={sortTableDataByPrice}
                   >
                     Price{" "}
@@ -155,8 +155,6 @@ export default function Home() {
       ) : (
         <Loader />
       )}
-      {/* <Loader /> */}
-
       <div className="flex items-center justify-center">
         <button
           type="button"
